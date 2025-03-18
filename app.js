@@ -53,10 +53,10 @@ function generateColorVariations(color) {
 // Function to lighten or darken a color
 function shadeColor(color, percent) {
   let num = parseInt(color.slice(1), 16),
-      amt = Math.round(2.55 * percent),
-      R = (num >> 16) + amt,
-      G = ((num >> 8) & 0x00FF) + amt,
-      B = (num & 0x0000FF) + amt;
+    amt = Math.round(2.55 * percent),
+    R = (num >> 16) + amt,
+    G = ((num >> 8) & 0x00FF) + amt,
+    B = (num & 0x0000FF) + amt;
   return `#${(0x1000000 + (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 + (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 + (B < 255 ? (B < 1 ? 0 : B) : 255)).toString(16).slice(1)}`;
 }
 
@@ -69,11 +69,11 @@ function createTile(x, y, width, height) {
   tile.style.width = `${width}px`;
   tile.style.height = `${height}px`;
   tile.style.backgroundColor = getRandomColor();
-  
+
   // Add a subtle border
   tile.style.border = "1px solid rgba(0,0,0,0.03)";
   tile.style.boxSizing = "border-box";
-  
+
   container.appendChild(tile);
 }
 
@@ -103,10 +103,10 @@ function createGrid(x, y, width, height, depth = 0) {
 
     // Choose a ratio from our predefined options
     const ratio = ratios[Math.floor(Math.random() * ratios.length)];
-    
+
     // Determine how to split (horizontally or vertically)
     const splitVertical = Math.random() > 0.5;
-    
+
     if (splitVertical) {
       // Vertical split
       const part1Height = height * (ratio.y / (ratio.x + ratio.y));
@@ -143,32 +143,32 @@ function updateAndRedraw() {
   // Get values from inputs
   const minSizeInput = document.getElementById("min-size");
   const maxDepthInput = document.getElementById("max-depth");
-  
+
   // Update global variables
   userMinSize = parseInt(minSizeInput.value) || 100; // Default to 100 if invalid
   userMaxDepth = parseInt(maxDepthInput.value) || 3; // Default to 3 if invalid
-  
+
   // Redraw the grid
   init();
 }
 
 // Set up event listeners when page loads
-window.onload = function() {
+window.onload = function () {
   // Create input fields and controls if they don't exist in HTML
   if (!document.getElementById("min-size")) {
     createControls();
   }
-  
+
   // Set initial values in input fields
   document.getElementById("min-size").value = userMinSize;
   document.getElementById("max-depth").value = userMaxDepth;
-  
+
   // Set up the redraw button
   const redrawButton = document.getElementById("redraw");
   if (redrawButton) {
     redrawButton.addEventListener("click", updateAndRedraw);
   }
-  
+
   // Initialize with default values
   init();
 };
@@ -177,59 +177,59 @@ window.onload = function() {
 function createControls() {
   const header = document.querySelector("header");
   if (!header) return;
-  
+
   // Create controls container
   const controls = document.createElement("div");
   controls.className = "controls";
-  
+
   // Create min size input
   const minSizeGroup = document.createElement("div");
   minSizeGroup.className = "input-group";
-  
+
   const minSizeLabel = document.createElement("label");
   minSizeLabel.setAttribute("for", "min-size");
   minSizeLabel.textContent = "Min Size:";
-  
+
   const minSizeInput = document.createElement("input");
   minSizeInput.type = "number";
   minSizeInput.id = "min-size";
   minSizeInput.value = userMinSize;
-  minSizeInput.min = "50";
-  minSizeInput.max = "300";
+  minSizeInput.min = "10";
+  minSizeInput.max = "700";
   minSizeInput.step = "10";
-  
+
   minSizeGroup.appendChild(minSizeLabel);
   minSizeGroup.appendChild(minSizeInput);
-  
+
   // Create max depth input
   const maxDepthGroup = document.createElement("div");
   maxDepthGroup.className = "input-group";
-  
+
   const maxDepthLabel = document.createElement("label");
   maxDepthLabel.setAttribute("for", "max-depth");
   maxDepthLabel.textContent = "Max Depth:";
-  
+
   const maxDepthInput = document.createElement("input");
   maxDepthInput.type = "number";
   maxDepthInput.id = "max-depth";
   maxDepthInput.value = userMaxDepth;
   maxDepthInput.min = "1";
-  maxDepthInput.max = "5";
+  maxDepthInput.max = "10";
   maxDepthInput.step = "1";
-  
+
   maxDepthGroup.appendChild(maxDepthLabel);
   maxDepthGroup.appendChild(maxDepthInput);
-  
+
   // Create update button
   const redrawButton = document.createElement("button");
   redrawButton.id = "redraw";
   redrawButton.textContent = "Update";
-  
+
   // Add everything to controls
   controls.appendChild(minSizeGroup);
   controls.appendChild(maxDepthGroup);
   controls.appendChild(redrawButton);
-  
+
   // Insert controls after logo or at beginning of header
   const logo = header.querySelector(".logo");
   if (logo) {
