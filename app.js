@@ -20,23 +20,21 @@ const colors = [
   { name: "Linen", hex: "#FBFBF4" },
   { name: "Milk", hex: "#FFFFE5" },
   { name: "Creamcheese", hex: "#F9F8D4" },
-  { name: "Creamcheese II", hex: "#FCFBE3" },
-  { name: "Fresh Cream", hex: "#F4F3C3" },
   // Greys
   { name: "Milan II", hex: "#DFE2CF" },
   { name: "Venician Coat", hex: "#C1BBA0" },
   { name: "Old Flag", hex: "#C1BEA4" },
   { name: "Oyster 2", hex: "#BAB5A0" },
   { name: "Oyster 3", hex: "#999B89" },
-  { name: "Lichen III", hex: "#B7B69E" },
-  { name: "Wooden Boat", hex: "#B8BFAC" },
-  { name: "Concrete", hex: "#777068" },
-  { name: "Shark", hex: "#BDC2C6" },
-  { name: "Slate II", hex: "#44423A" }
+  { name: "Wooden Boat", hex: "#B8BFAC" }
 ];
 
 // Get grid container reference
 const container = document.getElementById("grid-container");
+
+// Global variables for user controls
+let userMinSize = 100;
+let userMaxDepth = 3;
 
 // Function to shuffle colors
 function shuffle(array) {
@@ -71,6 +69,11 @@ function createTile(x, y, width, height) {
   tile.style.width = `${width}px`;
   tile.style.height = `${height}px`;
   tile.style.backgroundColor = getRandomColor();
+  
+  // Add a subtle border
+  tile.style.border = "1px solid rgba(0,0,0,0.03)";
+  tile.style.boxSizing = "border-box";
+  
   container.appendChild(tile);
 }
 
@@ -81,29 +84,44 @@ function getRandomColor() {
   return colorVariations[Math.floor(Math.random() * colorVariations.length)];
 }
 
-// Reduced variance in Fibonacci sequence
-const fibonacci = [2, 3, 5, 8];
+// More consistent ratio options (1:1, 1:2, 2:1)
+const ratios = [
+  { x: 1, y: 1 }, // Square
+  { x: 2, y: 1 }, // Horizontal rectangle
+  { x: 1, y: 2 }  // Vertical rectangle
+];
 
-// Quad-tree subdivision function with reduced variance
-function quadTree(x, y, width, height, depth = 0) {
+// Simplified subdivision function with user-defined parameters
+function createGrid(x, y, width, height, depth = 0) {
   return new Promise((resolve) => {
-    const minSize = 50;
-    if (width < minSize || height < minSize || depth > 4) {
+    // Use user-defined values for minimum size and max depth
+    if (width < userMinSize || height < userMinSize || depth >= userMaxDepth) {
       createTile(x, y, width, height);
       resolve();
       return;
     }
 
-    const ratio = fibonacci[Math.floor(Math.random() * fibonacci.length)];
-    const newWidth = width / ratio;
-    const newHeight = height / ratio;
-
-    Promise.all([
-      quadTree(x, y, newWidth, newHeight, depth + 1),
-      quadTree(x + newWidth, y, width - newWidth, newHeight, depth + 1),
-      quadTree(x, y + newHeight, newWidth, height - newHeight, depth + 1),
-      quadTree(x + newWidth, y + newHeight, width - newWidth, height - newHeight, depth + 1)
-    ]).then(resolve);
+    // Choose a ratio from our predefined options
+    const ratio = ratios[Math.floor(Math.random() * ratios.length)];
+    
+    // Determine how to split (horizontally or vertically)
+    const splitVertical = Math.random() > 0.5;
+    
+    if (splitVertical) {
+      // Vertical split
+      const part1Height = height * (ratio.y / (ratio.x + ratio.y));
+      Promise.all([
+        createGrid(x, y, width, part1Height, depth + 1),
+        createGrid(x, y + part1Height, width, height - part1Height, depth + 1)
+      ]).then(resolve);
+    } else {
+      // Horizontal split
+      const part1Width = width * (ratio.x / (ratio.x + ratio.y));
+      Promise.all([
+        createGrid(x, y, part1Width, height, depth + 1),
+        createGrid(x + part1Width, y, width - part1Width, height, depth + 1)
+      ]).then(resolve);
+    }
   });
 }
 
@@ -117,9 +135,109 @@ function init() {
   container.style.overflow = "hidden";
   container.innerHTML = "";
 
-  quadTree(0, 0, container.clientWidth, container.clientHeight);
+  createGrid(0, 0, container.clientWidth, container.clientHeight);
 }
 
-// Reinitialize the layout on window resize
-window.onload = init;
+// Function to update from user inputs and redraw
+function updateAndRedraw() {
+  // Get values from inputs
+  const minSizeInput = document.getElementById("min-size");
+  const maxDepthInput = document.getElementById("max-depth");
+  
+  // Update global variables
+  userMinSize = parseInt(minSizeInput.value) || 100; // Default to 100 if invalid
+  userMaxDepth = parseInt(maxDepthInput.value) || 3; // Default to 3 if invalid
+  
+  // Redraw the grid
+  init();
+}
+
+// Set up event listeners when page loads
+window.onload = function() {
+  // Create input fields and controls if they don't exist in HTML
+  if (!document.getElementById("min-size")) {
+    createControls();
+  }
+  
+  // Set initial values in input fields
+  document.getElementById("min-size").value = userMinSize;
+  document.getElementById("max-depth").value = userMaxDepth;
+  
+  // Set up the redraw button
+  const redrawButton = document.getElementById("redraw");
+  if (redrawButton) {
+    redrawButton.addEventListener("click", updateAndRedraw);
+  }
+  
+  // Initialize with default values
+  init();
+};
+
+// Function to create controls if they don't exist in HTML
+function createControls() {
+  const header = document.querySelector("header");
+  if (!header) return;
+  
+  // Create controls container
+  const controls = document.createElement("div");
+  controls.className = "controls";
+  
+  // Create min size input
+  const minSizeGroup = document.createElement("div");
+  minSizeGroup.className = "input-group";
+  
+  const minSizeLabel = document.createElement("label");
+  minSizeLabel.setAttribute("for", "min-size");
+  minSizeLabel.textContent = "Min Size:";
+  
+  const minSizeInput = document.createElement("input");
+  minSizeInput.type = "number";
+  minSizeInput.id = "min-size";
+  minSizeInput.value = userMinSize;
+  minSizeInput.min = "50";
+  minSizeInput.max = "300";
+  minSizeInput.step = "10";
+  
+  minSizeGroup.appendChild(minSizeLabel);
+  minSizeGroup.appendChild(minSizeInput);
+  
+  // Create max depth input
+  const maxDepthGroup = document.createElement("div");
+  maxDepthGroup.className = "input-group";
+  
+  const maxDepthLabel = document.createElement("label");
+  maxDepthLabel.setAttribute("for", "max-depth");
+  maxDepthLabel.textContent = "Max Depth:";
+  
+  const maxDepthInput = document.createElement("input");
+  maxDepthInput.type = "number";
+  maxDepthInput.id = "max-depth";
+  maxDepthInput.value = userMaxDepth;
+  maxDepthInput.min = "1";
+  maxDepthInput.max = "5";
+  maxDepthInput.step = "1";
+  
+  maxDepthGroup.appendChild(maxDepthLabel);
+  maxDepthGroup.appendChild(maxDepthInput);
+  
+  // Create update button
+  const redrawButton = document.createElement("button");
+  redrawButton.id = "redraw";
+  redrawButton.textContent = "Update";
+  
+  // Add everything to controls
+  controls.appendChild(minSizeGroup);
+  controls.appendChild(maxDepthGroup);
+  controls.appendChild(redrawButton);
+  
+  // Insert controls after logo or at beginning of header
+  const logo = header.querySelector(".logo");
+  if (logo) {
+    header.insertBefore(controls, logo.nextSibling);
+  } else {
+    header.insertBefore(controls, header.firstChild);
+  }
+}
+
+// Handle window resize
 window.onresize = init;
