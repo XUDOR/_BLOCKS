@@ -14,18 +14,28 @@
     <h1 class="logo">_BLOCKS</h1>
     
     <div class="controls">
+      
+      
       <div class="input-group">
         <label for="min-size">Min Size:</label>
         <input type="number" id="min-size" value="100" min="10" max="700" step="5">
       </div>
-      
+    
       <div class="input-group">
         <label for="max-depth">Max Depth:</label>
         <input type="number" id="max-depth" value="3" min="1" max="10" step="1">
       </div>
-      
+    
+      <span id="block-count">Blocks: 0</span> <!-- Shows the total number of blocks -->
+
+      <label class="checkbox-group">
+        <input type="checkbox" id="show-numbers">
+        Numbers
+      </label>
+    
       <button id="redraw">Update</button>
     </div>
+    
     
     <div class="nav-grid">
       <div class="nav-item"></div>
