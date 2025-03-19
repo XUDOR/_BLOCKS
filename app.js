@@ -1,4 +1,4 @@
-// app.js
+// app.js with ratio-based geometry export
 
 // Complete set of Whites, Neutrals, and Greys
 const colors = [
@@ -29,44 +29,90 @@ const colors = [
   { name: "Wooden Boat", hex: "#B8BFAC" }
 ];
 
-// Get grid container reference
+// Container and controls
 const container = document.getElementById("grid-container");
-
-// Grab references to block-count and show-numbers elements
 const blockCountDisplay = document.getElementById("block-count");
 const showNumbersCheckbox = document.getElementById("show-numbers");
 
-// Global variables for user controls
+// We'll let users specify container width & height
+// We assume these inputs exist in HTML for container width/height
+typeCheckOrCreateContainerInputs();
+
+function typeCheckOrCreateContainerInputs() {
+  // If the user doesn't have inputs for container width/height, create them.
+  // Otherwise, we assume they exist in the page.
+  const existingWidth = document.getElementById("container-width");
+  const existingHeight = document.getElementById("container-height");
+
+  if (!existingWidth || !existingHeight) {
+    // We'll just show how you'd create them on the fly.
+    // If your HTML already has them, skip this.
+    const header = document.querySelector("header");
+    if (!header) return;
+
+    // container dimension group
+    const containerDimGroup = document.createElement("div");
+    containerDimGroup.style.display = "flex";
+    containerDimGroup.style.gap = "10px";
+
+    // Label & input for container width
+    const widthLabel = document.createElement("label");
+    widthLabel.textContent = "Container Width:";
+    const widthInput = document.createElement("input");
+    widthInput.type = "number";
+    widthInput.id = "container-width";
+    widthInput.value = "1440";
+
+    // Label & input for container height
+    const heightLabel = document.createElement("label");
+    heightLabel.textContent = "Container Height:";
+    const heightInput = document.createElement("input");
+    heightInput.type = "number";
+    heightInput.id = "container-height";
+    heightInput.value = "900";
+
+    containerDimGroup.appendChild(widthLabel);
+    containerDimGroup.appendChild(widthInput);
+    containerDimGroup.appendChild(heightLabel);
+    containerDimGroup.appendChild(heightInput);
+
+    // Insert at top of the header (or wherever you want)
+    header.insertBefore(containerDimGroup, header.firstChild);
+  }
+}
+
+// Global user controls
 let userMinSize = 100;
 let userMaxDepth = 3;
-
-// We'll track how many tiles are created
 let blockCount = 0;
 
-// We'll store tile info for export
+// For ratio-based approach:
+// We'll store the baseWidth and baseHeight so we can compute ratios.
+let baseWidth = 0;
+let baseHeight = 0;
+
+// We'll store tile info (with ratio-based geometry) for export
 let layoutData = [];
 
-// Function to shuffle colors
+// Shuffle function
 function shuffle(array) {
   return array.sort(() => Math.random() - 0.5);
 }
 
-// Generate lighter and darker variations for each color
 function generateColorVariations(color) {
   return [
     color.hex,
-    shadeColor(color.hex, -10), // Darker shade
-    shadeColor(color.hex, 10)   // Lighter shade
+    shadeColor(color.hex, -10),
+    shadeColor(color.hex, 10)
   ];
 }
 
-// Function to lighten or darken a color
 function shadeColor(color, percent) {
   let num = parseInt(color.slice(1), 16);
   let amt = Math.round(2.55 * percent);
   let R = (num >> 16) + amt;
-  let G = ((num >> 8) & 0x00FF) + amt;
-  let B = (num & 0x0000FF) + amt;
+  let G = ((num >> 8) & 0x00ff) + amt;
+  let B = (num & 0x0000ff) + amt;
   return `#${(
     0x1000000 +
     (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 +
@@ -77,8 +123,25 @@ function shadeColor(color, percent) {
     .slice(1)}`;
 }
 
-// Function to create a tile
+function getRandomColor() {
+  const shuffledColors = shuffle(colors);
+  const colorVariations = generateColorVariations(shuffledColors[0]);
+  return colorVariations[Math.floor(Math.random() * colorVariations.length)];
+}
+
+// We'll define the ratio options
+const ratios = [
+  { x: 1, y: 1 },
+  { x: 2, y: 1 },
+  { x: 1, y: 2 }
+];
+
+// createTile: store ratio-based data in layoutData
 function createTile(x, y, width, height) {
+  // We'll place the tile in the container normally.
+  // But we'll also compute ratio-based geometry.
+
+  // Create the tile div
   const tile = document.createElement("div");
   tile.style.position = "absolute";
   tile.style.left = `${x}px`;
@@ -89,19 +152,18 @@ function createTile(x, y, width, height) {
   const color = getRandomColor();
   tile.style.backgroundColor = color;
 
-  // Add a subtle border
   tile.style.border = "1px solid rgba(0,0,0,0.03)";
   tile.style.boxSizing = "border-box";
 
   container.appendChild(tile);
 
-  // Increment the global blockCount
+  // Increment block count
   blockCount++;
 
-  // If 'Show Block Numbers' is checked, add a small label
+  // If showing numbers, add label
   if (showNumbersCheckbox && showNumbersCheckbox.checked) {
     const label = document.createElement("div");
-    label.textContent = blockCount; // tile number
+    label.textContent = blockCount;
     label.style.position = "absolute";
     label.style.top = "5px";
     label.style.left = "5px";
@@ -111,61 +173,47 @@ function createTile(x, y, width, height) {
     tile.appendChild(label);
   }
 
-  // Update the displayed block count in the header
+  // Update the displayed block count
   if (blockCountDisplay) {
     blockCountDisplay.textContent = `Blocks: ${blockCount}`;
   }
 
-  // Store tile info so we can export it if desired
+  // Compute ratio-based geometry:
+  // baseWidth & baseHeight are set in init()
+  const xRatio = x / baseWidth;
+  const yRatio = y / baseHeight;
+  const wRatio = width / baseWidth;
+  const hRatio = height / baseHeight;
+
+  // Store in layoutData
   layoutData.push({
     blockNumber: blockCount,
-    x,
-    y,
-    width,
-    height,
+    xRatio,
+    yRatio,
+    wRatio,
+    hRatio,
     color
   });
 }
 
-// Function to get a random color variation
-function getRandomColor() {
-  const shuffledColors = shuffle(colors);
-  const colorVariations = generateColorVariations(shuffledColors[0]);
-  return colorVariations[Math.floor(Math.random() * colorVariations.length)];
-}
-
-// More consistent ratio options (1:1, 1:2, 2:1)
-const ratios = [
-  { x: 1, y: 1 }, // Square
-  { x: 2, y: 1 }, // Horizontal rectangle
-  { x: 1, y: 2 }  // Vertical rectangle
-];
-
-// Simplified subdivision function with user-defined parameters
 function createGrid(x, y, width, height, depth = 0) {
   return new Promise((resolve) => {
-    // Use user-defined values for minimum size and max depth
     if (width < userMinSize || height < userMinSize || depth >= userMaxDepth) {
       createTile(x, y, width, height);
       resolve();
       return;
     }
 
-    // Choose a ratio from our predefined options
     const ratio = ratios[Math.floor(Math.random() * ratios.length)];
-
-    // Determine how to split (horizontally or vertically)
     const splitVertical = Math.random() > 0.5;
 
     if (splitVertical) {
-      // Vertical split
       const part1Height = height * (ratio.y / (ratio.x + ratio.y));
       Promise.all([
         createGrid(x, y, width, part1Height, depth + 1),
         createGrid(x, y + part1Height, width, height - part1Height, depth + 1)
       ]).then(resolve);
     } else {
-      // Horizontal split
       const part1Width = width * (ratio.x / (ratio.x + ratio.y));
       Promise.all([
         createGrid(x, y, part1Width, height, depth + 1),
@@ -175,106 +223,120 @@ function createGrid(x, y, width, height, depth = 0) {
   });
 }
 
-// Initialize the layout
 function init() {
+  // We read user container size from #container-width, #container-height (if they exist)
+  const widthInput = document.getElementById("container-width");
+  const heightInput = document.getElementById("container-height");
+
+  let desiredWidth = container.clientWidth; // fallback if input not found
+  let desiredHeight = container.clientHeight;
+
+  if (widthInput && heightInput) {
+    desiredWidth = parseInt(widthInput.value) || container.clientWidth;
+    desiredHeight = parseInt(heightInput.value) || container.clientHeight;
+  }
+
+  // Set the container size in CSS
+  container.style.width = desiredWidth + "px";
+  container.style.height = desiredHeight + "px";
+
+  // Now that container is sized, we can measure again if needed
+  const cW = container.clientWidth;
+  const cH = container.clientHeight;
+
+  // Store these as our base
+  baseWidth = cW;
+  baseHeight = cH;
+
   // Reset counters
   blockCount = 0;
   layoutData = [];
-
   container.style.position = "relative";
-  container.style.width = "100vw";
-  container.style.height = "100vh";
   container.style.margin = "0";
   container.style.padding = "0";
   container.style.overflow = "hidden";
   container.innerHTML = "";
 
-  createGrid(0, 0, container.clientWidth, container.clientHeight);
+  // Create the layout
+  createGrid(0, 0, cW, cH);
 }
 
-// Function to update from user inputs and redraw
 function updateAndRedraw() {
-  // Get values from inputs
   const minSizeInput = document.getElementById("min-size");
   const maxDepthInput = document.getElementById("max-depth");
 
-  // Update global variables
-  userMinSize = parseInt(minSizeInput.value) || 100; // Default to 100 if invalid
-  userMaxDepth = parseInt(maxDepthInput.value) || 3; // Default to 3 if invalid
+  userMinSize = parseInt(minSizeInput.value) || 100;
+  userMaxDepth = parseInt(maxDepthInput.value) || 3;
 
-  // Redraw the grid
   init();
 }
 
-// Export layoutData as JSON
 function exportLayoutAsJson() {
-  // Convert layoutData to JSON string
-  const jsonString = JSON.stringify(layoutData, null, 2);
+  // layoutData has ratio-based geometry.
+  // We'll export it.
 
-  // Create a Blob for the file
-  const blob = new Blob([jsonString], { type: 'application/json' });
+  const jsonString = JSON.stringify(layoutData, null, 2);
+  const blob = new Blob([jsonString], { type: "application/json" });
   const url = URL.createObjectURL(blob);
 
-  // Create a temporary link to trigger download
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
-  link.download = 'layout.json';
+  link.download = "layout.json";
   link.click();
 
-  // Clean up
   URL.revokeObjectURL(url);
 }
 
-// Set up event listeners when page loads
 window.onload = function () {
-  // Create input fields and controls if they don't exist in HTML
+  // If the user doesn't have controls in their HTML, create them
   if (!document.getElementById("min-size")) {
     createControls();
   }
 
-  // Set initial values in input fields
-  document.getElementById("min-size").value = userMinSize;
-  document.getElementById("max-depth").value = userMaxDepth;
+  // Setup initial input values
+  const minSizeInput = document.getElementById("min-size");
+  const maxDepthInput = document.getElementById("max-depth");
 
-  // Set up the redraw button
+  if (minSizeInput) {
+    minSizeInput.value = userMinSize;
+  }
+  if (maxDepthInput) {
+    maxDepthInput.value = userMaxDepth;
+  }
+
+  // Hook up existing buttons
   const redrawButton = document.getElementById("redraw");
   if (redrawButton) {
     redrawButton.addEventListener("click", updateAndRedraw);
   }
 
-  // Also set up the toggle for showNumbers
   if (showNumbersCheckbox) {
     showNumbersCheckbox.addEventListener("change", updateAndRedraw);
   }
 
-  // Create and hook up an "Export JSON" button
-  const exportButton = document.createElement('button');
-  exportButton.id = 'export-json';
-  exportButton.textContent = 'Export JSON';
-  exportButton.style.marginLeft = '1rem'; // optional styling
+  // Create an Export JSON button
+  const exportButton = document.createElement("button");
+  exportButton.id = "export-json";
+  exportButton.textContent = "Export JSON";
+  exportButton.style.marginLeft = "1rem";
 
   // Insert next to the existing redraw button
   if (redrawButton && redrawButton.parentNode) {
     redrawButton.parentNode.appendChild(exportButton);
   }
+  exportButton.addEventListener("click", exportLayoutAsJson);
 
-  // Add click handler
-  exportButton.addEventListener('click', exportLayoutAsJson);
-
-  // Initialize with default values
+  // Start
   init();
 };
 
-// Function to create controls if they don't exist in HTML
 function createControls() {
   const header = document.querySelector("header");
   if (!header) return;
 
-  // Create controls container
   const controls = document.createElement("div");
   controls.className = "controls";
 
-  // Create min size input
   const minSizeGroup = document.createElement("div");
   minSizeGroup.className = "input-group";
 
@@ -293,7 +355,6 @@ function createControls() {
   minSizeGroup.appendChild(minSizeLabel);
   minSizeGroup.appendChild(minSizeInput);
 
-  // Create max depth input
   const maxDepthGroup = document.createElement("div");
   maxDepthGroup.className = "input-group";
 
@@ -312,12 +373,10 @@ function createControls() {
   maxDepthGroup.appendChild(maxDepthLabel);
   maxDepthGroup.appendChild(maxDepthInput);
 
-  // Create update button
   const redrawButton = document.createElement("button");
   redrawButton.id = "redraw";
   redrawButton.textContent = "Update";
 
-  // Add everything to controls
   controls.appendChild(minSizeGroup);
   controls.appendChild(maxDepthGroup);
   controls.appendChild(redrawButton);
@@ -331,5 +390,5 @@ function createControls() {
   }
 }
 
-// Handle window resize
+// Re-init on window resize (optional if you want dynamic resizing)
 window.onresize = init;
