@@ -7,9 +7,11 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  max-width: 100vw;
   background-color: #f9f9f7;
   color: #658E82;
   overflow-x: hidden;
+  width: 100%;
 }
 
 /* Header */
@@ -22,10 +24,15 @@ header {
   font-weight: 100;
   /* Thin weight */
   font-size: 1em;
-  position: sticky;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
+  z-index: 1000;
+  width: 100%;
+  max-width: 100vw;
+  overflow: hidden;
+  margin-bottom: 1em;
 }
 
 .logo {
@@ -37,8 +44,6 @@ header {
   white-space: nowrap;
 }
 
-
-
 /* Navigation Grid: Square Cut into 4 */
 .nav-grid {
   display: grid;
@@ -47,12 +52,10 @@ header {
   width: 75px;
   height: 75px;
   gap: 5px;
-  margin-left: .3em;
-  margin-bottom: .3em;
+  
 }
 
 .nav-item {
-
   background-color: #444;
 }
 
@@ -64,6 +67,11 @@ header {
   margin-right: auto;
   /* This pushes the nav-grid to the right */
   margin-left: 20px;
+  width: 100%;
+  max-width: 100vw;
+  overflow: hidden;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 
 .input-group {
@@ -103,17 +111,16 @@ button#redraw:hover {
   background-color: #666;
 }
 
-
-
-
-
-
 /* Main Container */
 .container {
   position: relative;
   flex: 1;
   display: flex;
   flex-wrap: wrap;
+  width: 100%;
+  max-width: 100vw;
+  overflow: hidden;
+  padding-top: 70px; /* Prevent header overlap */
 }
 
 /* Footer */
@@ -126,17 +133,16 @@ footer {
   font-size: .8rem;
   font-weight: 200;
   /* Thin weight */
-  position: sticky;
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+  z-index: 1000;
 }
 
 .footTag {
   margin-right: 2em;
 }
-
-
 
 @media (max-width: 768px) {
   header {
@@ -168,7 +174,5 @@ footer {
     margin-top: .5em;
     margin-left: .3em;
     margin-bottom: .5em;
-
   }
-
 }
