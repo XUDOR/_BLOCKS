@@ -32,9 +32,16 @@ const colors = [
 // Get grid container reference
 const container = document.getElementById("grid-container");
 
+// Grab references to block-count and show-numbers elements
+const blockCountDisplay = document.getElementById("block-count");
+const showNumbersCheckbox = document.getElementById("show-numbers");
+
 // Global variables for user controls
 let userMinSize = 100;
 let userMaxDepth = 3;
+
+// We'll track how many tiles are created
+let blockCount = 0;
 
 // Function to shuffle colors
 function shuffle(array) {
@@ -52,11 +59,11 @@ function generateColorVariations(color) {
 
 // Function to lighten or darken a color
 function shadeColor(color, percent) {
-  let num = parseInt(color.slice(1), 16),
-    amt = Math.round(2.55 * percent),
-    R = (num >> 16) + amt,
-    G = ((num >> 8) & 0x00FF) + amt,
-    B = (num & 0x0000FF) + amt;
+  let num = parseInt(color.slice(1), 16);
+  let amt = Math.round(2.55 * percent);
+  let R = (num >> 16) + amt;
+  let G = ((num >> 8) & 0x00FF) + amt;
+  let B = (num & 0x0000FF) + amt;
   return `#${(0x1000000 + (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 + (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 + (B < 255 ? (B < 1 ? 0 : B) : 255)).toString(16).slice(1)}`;
 }
 
@@ -74,7 +81,31 @@ function createTile(x, y, width, height) {
   tile.style.border = "1px solid rgba(0,0,0,0.03)";
   tile.style.boxSizing = "border-box";
 
+  // If 'Show Block Numbers' is checked, add a small label
+  // We'll do it after we increment blockCount.
+
   container.appendChild(tile);
+
+  // Increment the global blockCount
+  blockCount++;
+
+  // If the user wants to see numbers, let's add them.
+  if (showNumbersCheckbox && showNumbersCheckbox.checked) {
+    const label = document.createElement("div");
+    label.textContent = blockCount; // tile number
+    label.style.position = "absolute";
+    label.style.top = "5px";
+    label.style.left = "5px";
+    label.style.fontSize = "0.7em";
+    label.style.color = "black";
+    label.style.fontWeight = "bold";
+    tile.appendChild(label);
+  }
+
+  // Update the displayed block count in the header
+  if (blockCountDisplay) {
+    blockCountDisplay.textContent = `Blocks: ${blockCount}`;
+  }
 }
 
 // Function to get a random color variation
@@ -127,6 +158,9 @@ function createGrid(x, y, width, height, depth = 0) {
 
 // Initialize the layout
 function init() {
+  // Reset block count before we start
+  blockCount = 0;
+
   container.style.position = "relative";
   container.style.width = "100vw";
   container.style.height = "100vh";
@@ -167,6 +201,11 @@ window.onload = function () {
   const redrawButton = document.getElementById("redraw");
   if (redrawButton) {
     redrawButton.addEventListener("click", updateAndRedraw);
+  }
+
+  // Also set up the toggle for showNumbers
+  if (showNumbersCheckbox) {
+    showNumbersCheckbox.addEventListener("change", updateAndRedraw);
   }
 
   // Initialize with default values
@@ -241,3 +280,6 @@ function createControls() {
 
 // Handle window resize
 window.onresize = init;
+
+// Keep the line count to 243 by adding blank lines:
+
