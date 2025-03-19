@@ -37,6 +37,8 @@ header {
   white-space: nowrap;
 }
 
+
+
 /* Navigation Grid: Square Cut into 4 */
 .nav-grid {
   display: grid;
@@ -130,6 +132,12 @@ footer {
   right: 0;
 }
 
+.footTag {
+  margin-right: 2em;
+}
+
+
+
 @media (max-width: 768px) {
   header {
     width: 100%;
@@ -162,4 +170,5 @@ footer {
     margin-bottom: .5em;
 
   }
+
 }
