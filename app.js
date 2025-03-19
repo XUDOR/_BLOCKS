@@ -43,6 +43,9 @@ let userMaxDepth = 3;
 // We'll track how many tiles are created
 let blockCount = 0;
 
+// We'll store tile info for export
+let layoutData = [];
+
 // Function to shuffle colors
 function shuffle(array) {
   return array.sort(() => Math.random() - 0.5);
@@ -64,7 +67,14 @@ function shadeColor(color, percent) {
   let R = (num >> 16) + amt;
   let G = ((num >> 8) & 0x00FF) + amt;
   let B = (num & 0x0000FF) + amt;
-  return `#${(0x1000000 + (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 + (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 + (B < 255 ? (B < 1 ? 0 : B) : 255)).toString(16).slice(1)}`;
+  return `#${(
+    0x1000000 +
+    (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 +
+    (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 +
+    (B < 255 ? (B < 1 ? 0 : B) : 255)
+  )
+    .toString(16)
+    .slice(1)}`;
 }
 
 // Function to create a tile
@@ -75,21 +85,20 @@ function createTile(x, y, width, height) {
   tile.style.top = `${y}px`;
   tile.style.width = `${width}px`;
   tile.style.height = `${height}px`;
-  tile.style.backgroundColor = getRandomColor();
+
+  const color = getRandomColor();
+  tile.style.backgroundColor = color;
 
   // Add a subtle border
   tile.style.border = "1px solid rgba(0,0,0,0.03)";
   tile.style.boxSizing = "border-box";
-
-  // If 'Show Block Numbers' is checked, add a small label
-  // We'll do it after we increment blockCount.
 
   container.appendChild(tile);
 
   // Increment the global blockCount
   blockCount++;
 
-  // If the user wants to see numbers, let's add them.
+  // If 'Show Block Numbers' is checked, add a small label
   if (showNumbersCheckbox && showNumbersCheckbox.checked) {
     const label = document.createElement("div");
     label.textContent = blockCount; // tile number
@@ -106,6 +115,16 @@ function createTile(x, y, width, height) {
   if (blockCountDisplay) {
     blockCountDisplay.textContent = `Blocks: ${blockCount}`;
   }
+
+  // Store tile info so we can export it if desired
+  layoutData.push({
+    blockNumber: blockCount,
+    x,
+    y,
+    width,
+    height,
+    color
+  });
 }
 
 // Function to get a random color variation
@@ -158,8 +177,9 @@ function createGrid(x, y, width, height, depth = 0) {
 
 // Initialize the layout
 function init() {
-  // Reset block count before we start
+  // Reset counters
   blockCount = 0;
+  layoutData = [];
 
   container.style.position = "relative";
   container.style.width = "100vw";
@@ -186,6 +206,25 @@ function updateAndRedraw() {
   init();
 }
 
+// Export layoutData as JSON
+function exportLayoutAsJson() {
+  // Convert layoutData to JSON string
+  const jsonString = JSON.stringify(layoutData, null, 2);
+
+  // Create a Blob for the file
+  const blob = new Blob([jsonString], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  // Create a temporary link to trigger download
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'layout.json';
+  link.click();
+
+  // Clean up
+  URL.revokeObjectURL(url);
+}
+
 // Set up event listeners when page loads
 window.onload = function () {
   // Create input fields and controls if they don't exist in HTML
@@ -207,6 +246,20 @@ window.onload = function () {
   if (showNumbersCheckbox) {
     showNumbersCheckbox.addEventListener("change", updateAndRedraw);
   }
+
+  // Create and hook up an "Export JSON" button
+  const exportButton = document.createElement('button');
+  exportButton.id = 'export-json';
+  exportButton.textContent = 'Export JSON';
+  exportButton.style.marginLeft = '1rem'; // optional styling
+
+  // Insert next to the existing redraw button
+  if (redrawButton && redrawButton.parentNode) {
+    redrawButton.parentNode.appendChild(exportButton);
+  }
+
+  // Add click handler
+  exportButton.addEventListener('click', exportLayoutAsJson);
 
   // Initialize with default values
   init();
@@ -280,6 +333,3 @@ function createControls() {
 
 // Handle window resize
 window.onresize = init;
-
-// Keep the line count to 243 by adding blank lines:
-
